@@ -2,8 +2,8 @@ import sys
 
 import pygame
 
-from scripts.utils import load_image, load_images
-from scripts.entities import PhysicsEntity
+from scripts.utils import load_image, load_images, Animation
+from scripts.entities import PhysicsEntity, Player 
 from scripts.tilemap import Tilemap
 
 def wide_physics_rects(self, pos):
@@ -40,11 +40,17 @@ class Game:
             'grass': load_images('tiles/grass'),
             'large_decor': load_images('tiles/large_decor'),
             'stone': load_images('tiles/stone'),
-            'player': load_image('entities/player.png')
+            'player': load_image('entities/player.png'),
+            'player/idle': Animation(load_images('entities/player/idle'), img_dur=6),
+            'player/run': Animation(load_images('entities/player/run'), img_dur=4),
+            'player/jump': Animation(load_images('entities/player/jump')),
+            'player/slide': Animation(load_images('entities/player/slide')),
+            'player/wall_slide': Animation(load_images('entities/player/wall_slide')),
         }
 
-        self.player_bbox = self.assets['player'].get_bounding_rect()
-        self.player = PhysicsEntity(self, 'player', (50, 50), (self.player_bbox.width - 8, self.player_bbox.height))
+        idle_frame = self.assets['player/idle'].images[0]
+        self.player_bbox = idle_frame.get_bounding_rect()
+        self.player = Player(self, (50, 50), (14, 26))
 
         self.tilemap = Tilemap(self, tile_size=16)
 
@@ -61,8 +67,9 @@ class Game:
             self.tilemap.render(self.display, offset=render_scroll)
 
             self.player.update(self.tilemap, (self.movement[1] - self.movement[0], 0))
-            hitbox = self.player.rect()
-            self.display.blit(self.assets['player'],(hitbox.centerx - self.player_bbox.centerx - render_scroll[0], hitbox.bottom - self.player_bbox.bottom - render_scroll[1]))
+            self.player.render(self.display, offset=render_scroll)
+            r = self.player.rect()
+            pygame.draw.rect(self.display, (255, 0, 0),(r.x - render_scroll[0], r.y - render_scroll[1], r.width, r.height), 1)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
