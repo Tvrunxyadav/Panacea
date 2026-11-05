@@ -6,6 +6,19 @@ from scripts.utils import load_image, load_images
 from scripts.entities import PhysicsEntity
 from scripts.tilemap import Tilemap
 
+def wide_physics_rects(self, pos):
+    ts = self.tile_size
+    bx, by = int(pos[0] // ts), int(pos[1] // ts)
+    rects = []
+    for dx in range(-2, 4):
+        for dy in range(-2, 4):
+            tile = self.tilemap.get(f'{bx + dx};{by + dy}')
+            if tile and tile['type'] in ('grass', 'stone'):
+                rects.append(pygame.Rect(tile['pos'][0] * ts, tile['pos'][1] * ts, ts, ts))
+    return rects
+
+Tilemap.physics_rects_around = wide_physics_rects
+
 pygame.init()
 
 class Game:
@@ -30,7 +43,8 @@ class Game:
             'player': load_image('entities/player.png')
         }
 
-        self.player = PhysicsEntity(self, 'player', (50, 50), (64, 50))
+        self.player_bbox = self.assets['player'].get_bounding_rect()
+        self.player = PhysicsEntity(self, 'player', (50, 50), (self.player_bbox.width - 8, self.player_bbox.height))
 
         self.tilemap = Tilemap(self, tile_size=16)
 
@@ -40,10 +54,9 @@ class Game:
 
             self.tilemap.render(self.display)
 
-            self.player.update((self.movement[1] - self.movement[0], 0))
-            self.player.render(self.display)
-
-            print(self.tilemap.tiles_around(self.player.pos))
+            self.player.update(self.tilemap, (self.movement[1] - self.movement[0], 0))
+            hitbox = self.player.rect()
+            self.display.blit(self.assets['player'],(hitbox.centerx - self.player_bbox.centerx, hitbox.bottom - self.player_bbox.bottom))
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
