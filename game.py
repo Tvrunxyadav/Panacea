@@ -2,9 +2,13 @@ import sys
 
 import pygame
 
-from scripts.utils import load_image, load_images, Animation
+from scripts.utils import load_image, load_images, Animation, recolor
 from scripts.entities import PhysicsEntity, Player 
 from scripts.tilemap import Tilemap
+from scripts.particle import Particle
+
+WHITE = (255, 255, 255)
+RETRO = (60, 82, 56)
 
 def wide_physics_rects(self, pos):
     ts = self.tile_size
@@ -17,6 +21,9 @@ def wide_physics_rects(self, pos):
                 rects.append(pygame.Rect(tile['pos'][0] * ts, tile['pos'][1] * ts, ts, ts))
     return rects
 
+def recolor_all(images):
+    return [recolor(img, WHITE, RETRO, 0.1) for img in images]
+
 Tilemap.physics_rects_around = wide_physics_rects
 
 pygame.init()
@@ -26,9 +33,9 @@ class Game:
         pygame.init()
 
         pygame.display.set_caption("Panacea")
-        self.screen = pygame.display.set_mode((640, 480))
+        self.screen = pygame.display.set_mode((704, 640))
 
-        self.display = pygame.Surface((320, 240))
+        self.display = pygame.Surface((352, 320))
 
         self.clock = pygame.time.Clock()
 
@@ -36,37 +43,49 @@ class Game:
         self.movement = [False, False]
 
         self.assets = {
-            'decor': load_images('tiles/decor'),
-            'grass': load_images('tiles/grass'),
+            'decor': recolor_all(load_images('tiles/decor')),
+            'grass': recolor_all(load_images('tiles/grass')),
             'large_decor': load_images('tiles/large_decor'),
-            'stone': load_images('tiles/stone'),
+            'stone': recolor_all(load_images('tiles/stone')),
             'player': load_image('entities/player.png'),
             'player/idle': Animation(load_images('entities/player/idle'), img_dur=6),
             'player/run': Animation(load_images('entities/player/run'), img_dur=4),
             'player/jump': Animation(load_images('entities/player/jump')),
             'player/slide': Animation(load_images('entities/player/slide')),
             'player/wall_slide': Animation(load_images('entities/player/wall_slide')),
+            'particles/particle': Animation(load_images('particles/particle'), img_dur=6, loop=False)
         }
 
         idle_frame = self.assets['player/idle'].images[0]
         self.player_bbox = idle_frame.get_bounding_rect()
-        self.player = Player(self, (50, 50), (14, 26))
+        self.player = Player(self, (50, 50), (14, 14))
 
         self.tilemap = Tilemap(self, tile_size=16)
         self.tilemap.load('map.json')
+
+        self.particles = []
 
         self.scroll = [0, 0]
 
     def run(self):
         while True:
-            self.display.fill((221, 198, 161))
+            self.display.fill((10, 16, 13))
 
             render_scroll = (int(self.scroll[0]), int(self.scroll[1]))
 
             self.tilemap.render(self.display, offset=render_scroll)
 
-            self.player.update(self.tilemap, (self.movement[1] - self.movement[0], 0))
+            self.player.update(self.tilemap, ((self.movement[1] - self.movement[0]) * 1.4, 0))
             self.player.render(self.display, offset=render_scroll)
+            hitbox = self.player.rect()
+            debug_rect = pygame.Rect(hitbox.x - render_scroll[0], hitbox.y - render_scroll[1], hitbox.width, hitbox.height)
+            pygame.draw.rect(self.display, (255, 0, 0), debug_rect, 1)
+
+            for particle in self.particles.copy():
+                kill = particle.update()
+                particle.render(self.display, offset=render_scroll)
+                if kill:
+                    self.particles.remove(particle)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -78,7 +97,9 @@ class Game:
                     if event.key == pygame.K_RIGHT:
                         self.movement[1] = True
                     if event.key == pygame.K_UP:
-                        self.player.velocity[1] = -3
+                        self.player.jump()
+                    if event.key == pygame.K_x:
+                        self.player.dash()
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_LEFT:
                         self.movement[0] = False

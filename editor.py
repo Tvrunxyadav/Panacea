@@ -12,9 +12,9 @@ class Editor:
         pygame.init()
 
         pygame.display.set_caption("Editor")
-        self.screen = pygame.display.set_mode((640, 480))
+        self.screen = pygame.display.set_mode((704, 640))
 
-        self.display = pygame.Surface((320, 240))
+        self.display = pygame.Surface((352, 320))
 
         self.clock = pygame.time.Clock()
 
@@ -47,7 +47,7 @@ class Editor:
 
     def run(self):
         while True:
-            self.display.fill((221, 198, 161))
+            self.display.fill((62, 35, 44))
 
             self.scroll[0] += (self.movement[1] - self.movement[0]) * 2
             self.scroll[1] += (self.movement[3] - self.movement[2]) * 2

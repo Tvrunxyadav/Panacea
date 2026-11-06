@@ -15,6 +15,13 @@ def load_images(path):
         images.append(load_image(path + '/' + img_name))
     return images
 
+def recolor(img, old, new, distance=0.0):
+    img = img.copy()
+    pa = pygame.PixelArray(img)
+    pa.replace(old, new, distance)
+    pa.close()
+    return img
+
 class Animation:
     def __init__(self, images, img_dur=5, loop=True):
         self.images = images
