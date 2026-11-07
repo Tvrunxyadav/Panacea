@@ -1,3 +1,4 @@
+import os
 import sys
 
 import pygame
@@ -62,6 +63,18 @@ class Game:
             'projectile': load_image('projectile.png')
         }
 
+        self.sfx = {
+            'jump': pygame.mixer.Sound('data/sfx/jump.wav'),
+            'dash': pygame.mixer.Sound('data/sfx/dash.wav'),
+            'hit': pygame.mixer.Sound('data/sfx/hit.wav'),
+            'shoot': pygame.mixer.Sound('data/sfx/shoot.wav'),
+        }
+
+        self.sfx['jump'].set_volume(0.1)
+        self.sfx['dash'].set_volume(0.4)
+        self.sfx['hit'].set_volume(0.2)
+        self.sfx['shoot'].set_volume(0.4)
+
         idle_frame = self.assets['player/idle'].images[0]
         self.player_bbox = idle_frame.get_bounding_rect()
         self.player = Player(self, (50, 50), (14, 14))
@@ -92,13 +105,17 @@ class Game:
         self.transition = -30
 
     def run(self):
+        pygame.mixer.music.load('data/music.wav')
+        pygame.mixer.music.set_volume(0.07)
+        pygame.mixer.music.play(-1)
+
         while True:
             self.display.fill((10, 16, 13))
 
             if not len(self.enemies):
                 self.transition += 1
                 if self.transition > 30:
-                    self.level += 1
+                    self.level = min(self.level + 1, len(os.listdir('data/maps')) - 1)
                     self.load_level(self.level)
             if self.transition < 0:
                 self.transition += 1
@@ -106,7 +123,7 @@ class Game:
             if self.dead:
                 self.dead += 1
                 if self.dead >= 10:
-                    self.transition += min(30, self.transition + 1)
+                    self.transition = min(30, self.transition + 1)
                 if self.dead > 40:
                     self.load_level(self.level)
 
@@ -141,6 +158,7 @@ class Game:
                     if self.player.rect().collidepoint(projectile[0]):
                         self.projectiles.remove(projectile)
                         self.dead += 1
+                        self.sfx['hit'].play()
                         for i in range(30):
                             angle = random.random() * math.pi * 2
                             speed = random.random() * 5
