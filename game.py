@@ -5,6 +5,7 @@ import pygame
 import random
 import math
 
+from scripts.crt import CRT
 from scripts.utils import load_image, load_images, Animation, recolor
 from scripts.entities import PhysicsEntity, Player, Enemy
 from scripts.tilemap import Tilemap
@@ -37,9 +38,9 @@ class Game:
         pygame.init()
 
         pygame.display.set_caption("Panacea")
-        self.screen = pygame.display.set_mode((704, 640))
-
-        self.display = pygame.Surface((352, 320))
+        self.display = pygame.Surface((352, 320)).convert((255, 65280, 16711680, 0))
+        pygame.display.set_mode((704, 640), pygame.DOUBLEBUF | pygame.OPENGL)
+        self.crt = CRT(self.display)
 
         self.clock = pygame.time.Clock()
 
@@ -190,6 +191,8 @@ class Game:
                         self.player.jump()
                     if event.key == pygame.K_x:
                         self.player.dash()
+                    if event.key == pygame.K_r:
+                        self.load_level(self.level)
                 if event.type == pygame.KEYUP:
                     if event.key == pygame.K_LEFT:
                         self.movement[0] = False
@@ -202,8 +205,7 @@ class Game:
                 transition_surf.set_colorkey((255, 255, 255))
                 self.display.blit(transition_surf, (0, 0))
             
-            self.screen.blit(pygame.transform.scale(self.display, self.screen.get_size()), (0, 0))
-            pygame.display.update()
+            self.crt.render()
             self.clock.tick(60)
 
 Game().run()
