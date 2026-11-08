@@ -119,6 +119,7 @@ class Enemy(PhysicsEntity):
         if abs(self.game.player.dashing) >= 50:
             if self.rect().colliderect(self.game.player.rect()):
                 self.game.sfx['hit'].play()
+                self.game.screenshake = max(11, self.game.screenshake)
                 for i in range(30):
                     angle = random.random() * math.pi * 2
                     speed = random.random() * 5

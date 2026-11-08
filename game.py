@@ -69,12 +69,14 @@ class Game:
             'dash': pygame.mixer.Sound('data/sfx/dash.wav'),
             'hit': pygame.mixer.Sound('data/sfx/hit.wav'),
             'shoot': pygame.mixer.Sound('data/sfx/shoot.wav'),
+            'wall_hit': pygame.mixer.Sound('data/sfx/hit.wav'),
         }
 
         self.sfx['jump'].set_volume(0.1)
         self.sfx['dash'].set_volume(0.4)
         self.sfx['hit'].set_volume(0.2)
         self.sfx['shoot'].set_volume(0.4)
+        self.sfx['wall_hit'].set_volume(0.1)
 
         idle_frame = self.assets['player/idle'].images[0]
         self.player_bbox = idle_frame.get_bounding_rect()
@@ -83,6 +85,7 @@ class Game:
         self.tilemap = Tilemap(self, tile_size=16)
 
         self.level = 0
+        self.screenshake = 0
         self.load_level(self.level)
 
     def load_level(self, map_id):
@@ -113,6 +116,8 @@ class Game:
         while True:
             self.display.fill((10, 16, 13))
 
+            self.screenshake = max(0, self.screenshake - 1)
+
             if not len(self.enemies):
                 self.transition += 1
                 if self.transition > 30:
@@ -126,9 +131,11 @@ class Game:
                 if self.dead >= 10:
                     self.transition = min(30, self.transition + 1)
                 if self.dead > 40:
+                    self.level = 0
                     self.load_level(self.level)
 
-            render_scroll = (int(self.scroll[0]), int(self.scroll[1]))
+            shake = (random.random() * self.screenshake - self.screenshake / 2, random.random() * self.screenshake - self.screenshake / 2)
+            render_scroll = (int(self.scroll[0] + shake[0]), int(self.scroll[1] + shake[1]))
 
             for enemy in self.enemies.copy():
                 kill = enemy.update(self.tilemap, (0, 0))
@@ -151,6 +158,7 @@ class Game:
                 self.display.blit(img, (projectile[0][0] - img.get_width() / 2 - render_scroll[0], projectile[0][1] - img.get_height() / 2 - render_scroll[1]))
                 if self.tilemap.solid_check(projectile[0]):
                     self.projectiles.remove(projectile)
+                    self.sfx['wall_hit'].play()
                     for i in range(4):
                         self.sparks.append(Spark(projectile[0], random.random() - 0.5 + (math.pi if projectile[1] < 0 else 0), 2 + random.random()))
                 elif projectile[2] > 360:
@@ -160,6 +168,7 @@ class Game:
                         self.projectiles.remove(projectile)
                         self.dead += 1
                         self.sfx['hit'].play()
+                        self.screenshake = max(16, self.screenshake)
                         for i in range(30):
                             angle = random.random() * math.pi * 2
                             speed = random.random() * 5
