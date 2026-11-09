@@ -4,6 +4,8 @@ import sys
 import pygame
 import random
 import math
+if getattr(sys, 'frozen', False):
+    os.chdir(sys._MEIPASS)
 
 from scripts.crt import CRT
 from scripts.utils import load_image, load_images, Animation, recolor
