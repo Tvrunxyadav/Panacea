@@ -86,6 +86,8 @@ class Game:
 
         self.level = 0
         self.screenshake = 0
+        self.play_time = 0
+        self.hud_font = pygame.font.SysFont('couriernew,courier,consolas,monospace', 12, bold=True)
         self.load_level(self.level)
 
     def load_level(self, map_id):
@@ -108,6 +110,9 @@ class Game:
         self.dead = 0
         self.transition = -30
 
+    def fmt_time(self, ms):
+        return '%02d:%02d.%02d' % (ms // 60000, (ms // 1000) % 60, (ms % 1000) // 10)
+
     def run(self):
         pygame.mixer.music.load('data/music.wav')
         pygame.mixer.music.set_volume(0.07)
@@ -121,7 +126,11 @@ class Game:
             if not len(self.enemies):
                 self.transition += 1
                 if self.transition > 30:
-                    self.level = min(self.level + 1, len(os.listdir('data/maps')) - 1)
+                    if self.level >= len(os.listdir('data/maps')) - 1:
+                        self.level = 0
+                        self.play_time = 0
+                    else:
+                        self.level += 1
                     self.load_level(self.level)
             if self.transition < 0:
                 self.transition += 1
@@ -132,6 +141,7 @@ class Game:
                     self.transition = min(30, self.transition + 1)
                 if self.dead > 40:
                     self.level = 0
+                    self.play_time = 0
                     self.load_level(self.level)
 
             shake = (random.random() * self.screenshake - self.screenshake / 2, random.random() * self.screenshake - self.screenshake / 2)
@@ -208,6 +218,9 @@ class Game:
                     if event.key == pygame.K_RIGHT:
                         self.movement[1] = False
 
+            hud = self.hud_font.render(self.fmt_time(self.play_time), False, (79, 110, 72))
+            self.display.blit(hud, (6 - render_scroll[0], 6 - render_scroll[1]))
+
             if self.transition:
                 transition_surf = pygame.Surface(self.display.get_size())
                 pygame.draw.circle(transition_surf, (255, 255, 255), (self.display.get_width() // 2, self.display.get_height() // 2), (30 - abs(self.transition)) * 8)
@@ -215,6 +228,8 @@ class Game:
                 self.display.blit(transition_surf, (0, 0))
             
             self.crt.render()
-            self.clock.tick(60)
+            dt = self.clock.tick(60)
+            if len(self.enemies):
+                self.play_time += dt
 
 Game().run()
